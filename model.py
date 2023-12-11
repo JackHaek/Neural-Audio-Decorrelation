@@ -65,6 +65,9 @@ def generator_mel_loss(big_x, big_y):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+def hifigan_lrelu(x):
+    return tf.nn.leaky_relu(x, alpha=0.1)
+
 class PeriodDiscriminator(tf.keras.Layer):
     def __init__(self, period):
         super().__init__()
@@ -76,13 +79,19 @@ class PeriodDiscriminator(tf.keras.Layer):
         
         self.convs_list = [
             tf.keras.layers.Reshape((period, -1)),
-            tf.keras.layers.Conv2D(filters=32, kernel_size=kernel_size, strides=stride, padding='same', activation=tf.nn.leaky_relu, kernel_regularizer=L1(), bias_regularizer=L1()),
-            tf.keras.layers.Conv2D(filters=128, kernel_size=kernel_size, strides=stride, padding='same', activation=tf.nn.leaky_relu, kernel_regularizer=L1(), bias_regularizer=L1()),
-            tf.keras.layers.Conv2D(filters=512, kernel_size=kernel_size, strides=stride, padding='same', activation=tf.nn.leaky_relu, kernel_regularizer=L1(), bias_regularizer=L1()),
-            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=stride, padding='same', activation=tf.nn.leaky_relu, kernel_regularizer=L1(), bias_regularizer=L1()),
-            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=(1, 1), padding='same', activation=tf.nn.leaky_relu, kernel_regularizer=L1(), bias_regularizer=L1()),
-            tf.keras.layers.Conv2D(filters=1, kernel_size=(3, 1), strides=(1, 1), padding='same', kernel_regularizer=L1(), bias_regularizer=L1()),
-        ])
+            tf.keras.layers.Conv2D(filters=32, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.Conv2D(filters=128, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.Conv2D(filters=512, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=(1, 1), padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.Conv2D(filters=1, kernel_size=(3, 1), strides=(1, 1), padding='same'),
+            tf.keras.layers.UnitNormalization()
+        ]
 
     def build(self, input_shape):
         # Which axis is time frame count (L)?
@@ -94,4 +103,40 @@ class PeriodDiscriminator(tf.keras.Layer):
     
     def call(self, inputs):
         return self.convs(inputs)
+
+def append_spectral_normalized_layer(layer_list, layer):
+    layer_list.append(tf.keras.layers.SpectralNormalization(layer))
+
+def append_weight_normalized_layer(layer_list, layer):
+    layer_list.append(layer)
+    layer_list.append(tf.keras.layers.UnitNormalization())
+
+class ScaleDiscriminator(tf.keras.Layer):
+    def __init__(self, mean_pool_count, use_spectral_norm):
+        super().__init__()
+        add_normalized_layer = append_spectral_normalized_layer if use_spectral_norm else append_weight_normalized_layer
+        
+        convs_list = []
+        for _ in range(mean_pool_count):
+            convs_list.append(tf.keras.layers.AvgPooling1D(pool_size=4, strides=2, padding='same'))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=15, strides=1, padding='same', activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=41, strides=2, padding='same', groups=4, activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=256, kernel_size=41, strides=2, padding='same', groups=16, activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=512, kernel_size=41, strides=4, padding='same', groups=16, activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=4, padding='same', groups=16, activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=1, padding='same', groups=16, activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=5, strides=1, padding='same', activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1, kernel_size=3, strides=1, padding='same'))
+        
+        self.convs = tf.keras.Sequential(convs_list)
+
+    def call(self, inputs):
+        return self.convs(inputs)
+
+# End HiFi-GAN code
+
+def generator_adversarial_loss_part(discriminator_output):
+    # The generator only cares about how well it was able to fool the discriminator,
+    # not how well the discriminator can identify genuine audio.
+    return tf.square(discriminator_output - tf.ones_like(discriminator_output))
 
