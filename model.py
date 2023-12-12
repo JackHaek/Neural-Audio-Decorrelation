@@ -135,8 +135,15 @@ class ScaleDiscriminator(tf.keras.Layer):
 
 # End HiFi-GAN code
 
-def generator_adversarial_loss_part(discriminator_output):
+def generator_adversarial_loss_part(d_of_y):
     # The generator only cares about how well it was able to fool the discriminator,
     # not how well the discriminator can identify genuine audio.
-    return tf.square(discriminator_output - tf.ones_like(discriminator_output))
+    return tf.square(d_of_y - tf.ones_like(d_of_y))
 
+def discriminator_adversarial_loss_part(d_of_x, d_of_y):
+    # The discriminator cares about both kinds of failures it makes
+    return tf.square(d_of_x - tf.ones_like(d_of_x)) + tf.square(d_of_y)
+
+
+coh_loss_scale = tf.constant(2.5)
+mel_loss_scale = tf.constant(5.625)
