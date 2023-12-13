@@ -11,11 +11,33 @@ relu = tf.keras.activations.relu
 
 mel_matrix_what = tf.signal.linear_to_mel_weight_matrix(M, 513, sample_rate=22050)
 
+class Complex2Real(tf.keras.Layer):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, inputs):
+        real_inputs = tf.math.real(inputs)
+        imag_inputs = tf.math.imag(inputs)
+        # Help, what shape is the tensor
+        assert False
+
+class Real2Complex(tf.keras.Layer):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, inputs):
+        # Help, what shape is the tensor
+        real_inputs = inputs[:,:,::2]
+        imag_inputs = inputs[:,:,1::2]
+        return tf.complex(real_inputs, imag_inputs)
+
 generator = tf.keras.Sequential([
+    Complex2Real(),
     tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
     tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
     tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K)
+    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K),
+    Real2Complex()
 ])
 
 def generator_coherence_loss(big_x, big_y):
@@ -65,9 +87,6 @@ def generator_mel_loss(big_x, big_y):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def hifigan_lrelu(x):
-    return tf.nn.leaky_relu(x, alpha=0.1)
-
 class PeriodDiscriminator(tf.keras.Layer):
     def __init__(self, period):
         super().__init__()
@@ -75,20 +94,24 @@ class PeriodDiscriminator(tf.keras.Layer):
         
         kernel_size = (5, 1)
         stride = (3, 1)
-        L1 = tf.keras.regularizers.L1
         
         self.convs_list = [
             tf.keras.layers.Reshape((period, -1)),
-            tf.keras.layers.Conv2D(filters=32, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.Conv2D(filters=32, kernel_size=kernel_size, strides=stride, padding='same'),
             tf.keras.layers.UnitNormalization(),
-            tf.keras.layers.Conv2D(filters=128, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.LeakyReLU(0.1),
+            tf.keras.layers.Conv2D(filters=128, kernel_size=kernel_size, strides=stride, padding='same'),
             tf.keras.layers.UnitNormalization(),
-            tf.keras.layers.Conv2D(filters=512, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.LeakyReLU(0.1),
+            tf.keras.layers.Conv2D(filters=512, kernel_size=kernel_size, strides=stride, padding='same'),
             tf.keras.layers.UnitNormalization(),
-            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=stride, padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.LeakyReLU(0.1),
+            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=stride, padding='same'),
             tf.keras.layers.UnitNormalization(),
-            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=(1, 1), padding='same', activation=hifigan_lrelu),
+            tf.keras.layers.LeakyReLU(0.1),
+            tf.keras.layers.Conv2D(filters=1024, kernel_size=kernel_size, strides=(1, 1), padding='same'),
             tf.keras.layers.UnitNormalization(),
+            tf.keras.layers.LeakyReLU(0.1),
             tf.keras.layers.Conv2D(filters=1, kernel_size=(3, 1), strides=(1, 1), padding='same'),
             tf.keras.layers.UnitNormalization()
         ]
@@ -119,13 +142,20 @@ class ScaleDiscriminator(tf.keras.Layer):
         convs_list = []
         for _ in range(mean_pool_count):
             convs_list.append(tf.keras.layers.AvgPooling1D(pool_size=4, strides=2, padding='same'))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=15, strides=1, padding='same', activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=41, strides=2, padding='same', groups=4, activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=256, kernel_size=41, strides=2, padding='same', groups=16, activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=512, kernel_size=41, strides=4, padding='same', groups=16, activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=4, padding='same', groups=16, activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=1, padding='same', groups=16, activation=hifigan_lrelu))
-        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=5, strides=1, padding='same', activation=hifigan_lrelu))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=15, strides=1, padding='same'))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=128, kernel_size=41, strides=2, padding='same', groups=4))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=256, kernel_size=41, strides=2, padding='same', groups=16))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=512, kernel_size=41, strides=4, padding='same', groups=16))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=4, padding='same', groups=16))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=41, strides=1, padding='same', groups=16))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
+        add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1024, kernel_size=5, strides=1, padding='same'))
+        convs_list.append(tf.keras.layers.LeakyReLU(0.1))
         add_normalized_layer(convs_list, tf.keras.layers.Conv1D(filters=1, kernel_size=3, strides=1, padding='same'))
         
         self.convs = tf.keras.Sequential(convs_list)
@@ -147,3 +177,12 @@ def discriminator_adversarial_loss_part(d_of_x, d_of_y):
 
 coh_loss_scale = tf.constant(2.5)
 mel_loss_scale = tf.constant(5.625)
+
+generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
+discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
+
+def train_step(x):
+    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+        big_x = tf.signal.stft(x, 1024, 256)
+        big_y = generator(big_x)
+    assert False
