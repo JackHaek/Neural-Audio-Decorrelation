@@ -1,0 +1,90 @@
+musdb18hq\test\Signe Jakobsen - What Have You Done To Me\mixture.wav
+musdb18hq\test\Secretariat - Borderline\mixture.wav
+musdb18hq\test\The Easton Ellises (Baumi) - SDRNR\mixture.wav
+musdb18hq\train\Aimee Norwich - Child\mixture.wav
+musdb18hq\train\Black Bloc - If You Want Success\mixture.wav
+musdb18hq\train\Spike Mullings - Mike's Sulking\mixture.wav
+musdb18hq\test\We Fell From The Sky - Not You\mixture.wav
+musdb18hq\test\Timboz - Pony\mixture.wav
+musdb18hq\train\Cnoc An Tursa - Bannockburn\mixture.wav
+musdb18hq\train\Traffic Experiment - Once More (With Feeling)\mixture.wav
+musdb18hq\train\Bill Chudziak - Children Of No-one\mixture.wav
+musdb18hq\train\Clara Berry And Wooldog - Air Traffic\mixture.wav
+musdb18hq\train\Young Griffo - Blood To Bone\mixture.wav
+musdb18hq\train\Young Griffo - Facade\mixture.wav
+musdb18hq\train\James May - Dont Let Go\mixture.wav
+musdb18hq\test\Secretariat - Over The Top\mixture.wav
+musdb18hq\train\Strand Of Oaks - Spacestation\mixture.wav
+musdb18hq\test\Nerve 9 - Pray For The Rain\mixture.wav
+musdb18hq\test\Motor Tapes - Shore\mixture.wav
+musdb18hq\train\Dreamers Of The Ghetto - Heavy Love\mixture.wav
+musdb18hq\train\Tim Taler - Stalker\mixture.wav
+musdb18hq\train\North To Alaska - All The Same\mixture.wav
+musdb18hq\train\Music Delta - 80s Rock\mixture.wav
+musdb18hq\train\Skelpolu - Together Alone\mixture.wav
+musdb18hq\test\Tom McKenzie - Directions\mixture.wav
+musdb18hq\train\Music Delta - Gospel\mixture.wav
+musdb18hq\test\Girls Under Glass - We Feel Alright\mixture.wav
+musdb18hq\test\Speak Softly - Like Horses\mixture.wav
+musdb18hq\test\The Long Wait - Dark Horses\mixture.wav
+musdb18hq\train\Leaf - Wicked\mixture.wav
+musdb18hq\test\Little Chicago's Finest - My Own\mixture.wav
+musdb18hq\train\The Long Wait - Back Home To Blue\mixture.wav
+musdb18hq\train\James May - All Souls Moon\mixture.wav
+musdb18hq\train\Auctioneer - Our Future Faces\mixture.wav
+musdb18hq\train\Music Delta - Country2\mixture.wav
+musdb18hq\train\Patrick Talbot - Set Me Free\mixture.wav
+musdb18hq\train\Fergessen - Nos Palpitants\mixture.wav
+musdb18hq\test\Cristina Vane - So Easy\mixture.wav
+musdb18hq\test\Speak Softly - Broken Man\mixture.wav
+musdb18hq\train\Alexander Ross - Goodbye Bolero\mixture.wav
+musdb18hq\test\Juliet's Rescue - Heartbeats\mixture.wav
+musdb18hq\train\Flags - 54\mixture.wav
+musdb18hq\train\Fergessen - The Wind\mixture.wav
+musdb18hq\train\Hollow Ground - Left Blind\mixture.wav
+musdb18hq\test\Side Effects Project - Sing With Me\mixture.wav
+musdb18hq\train\Music Delta - Country1\mixture.wav
+musdb18hq\train\Chris Durban - Celebrate\mixture.wav
+musdb18hq\train\Actions - One Minute Smile\mixture.wav
+musdb18hq\train\Hop Along - Sister Cities\mixture.wav
+musdb18hq\train\Titanium - Haunted Age\mixture.wav
+musdb18hq\train\Helado Negro - Mitad Del Mundo\mixture.wav
+musdb18hq\train\Hezekiah Jones - Borrowed Heart\mixture.wav
+musdb18hq\train\Port St Willow - Stay Even\mixture.wav
+musdb18hq\train\Music Delta - Grunge\mixture.wav
+musdb18hq\train\Dark Ride - Burning Bridges\mixture.wav
+musdb18hq\test\PR - Happy Daze\mixture.wav
+musdb18hq\train\Sweet Lights - You Let Me Down\mixture.wav
+musdb18hq\train\BigTroubles - Phantom\mixture.wav
+musdb18hq\test\Angels In Amplifiers - I'm Alright\mixture.wav
+musdb18hq\train\Creepoid - OldTree\mixture.wav
+musdb18hq\train\Clara Berry And Wooldog - Stella\mixture.wav
+musdb18hq\train\Drumtracks - Ghost Bitch\mixture.wav
+musdb18hq\train\Traffic Experiment - Sirens\mixture.wav
+musdb18hq\train\The Districts - Vermont\mixture.wav
+musdb18hq\train\Grants - PunchDrunk\mixture.wav
+musdb18hq\test\Arise - Run Run Run\mixture.wav
+musdb18hq\test\Carlos Gonzalez - A Place For Us\mixture.wav
+musdb18hq\train\A Classic Education - NightOwl\mixture.wav
+musdb18hq\train\Music Delta - Hendrix\mixture.wav
+musdb18hq\test\Moosmusic - Big Dummy Shake\mixture.wav
+musdb18hq\train\Meaxic - You Listen\mixture.wav
+musdb18hq\train\Angela Thomas Wade - Milk Cow Blues\mixture.wav
+musdb18hq\train\Triviul - Angelsaint\mixture.wav
+musdb18hq\test\Sambasevam Shanmugam - Kaathaadi\mixture.wav
+musdb18hq\train\Music Delta - Reggae\mixture.wav
+musdb18hq\train\James May - If You Say\mixture.wav
+musdb18hq\test\Punkdisco - Oral Hygiene\mixture.wav
+musdb18hq\train\Clara Berry And Wooldog - Waltz For My Victims\mixture.wav
+musdb18hq\train\Secret Mountains - High Horse\mixture.wav
+musdb18hq\train\Music Delta - Rockabilly\mixture.wav
+musdb18hq\test\The Sunshine Garcia Band - For I Am The Moon\mixture.wav
+musdb18hq\test\BKS - Bulldozer\mixture.wav
+musdb18hq\train\Steven Clark - Bounty\mixture.wav
+musdb18hq\train\Actions - Devil's Words\mixture.wav
+musdb18hq\train\Fergessen - Back From The Start\mixture.wav
+musdb18hq\train\St Vitus - Word Gets Around\mixture.wav
+musdb18hq\test\Lyndsey Ollard - Catching Up\mixture.wav
+musdb18hq\train\Music Delta - Britpop\mixture.wav
+musdb18hq\train\Leaf - Come Around\mixture.wav
+musdb18hq\train\Leaf - Summerghost\mixture.wav

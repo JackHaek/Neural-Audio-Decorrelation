@@ -1,0 +1,30 @@
+musdb18hq\train\AvaLuna - Waterduct\mixture.wav
+musdb18hq\test\Georgia Wonder - Siren\mixture.wav
+musdb18hq\test\Forkupines - Semantics\mixture.wav
+musdb18hq\train\ANiMAL - Easy Tiger\mixture.wav
+musdb18hq\train\Faces On Film - Waiting For Ga\mixture.wav
+musdb18hq\test\Al James - Schoolboy Facination\mixture.wav
+musdb18hq\train\Lushlife - Toynbee Suite\mixture.wav
+musdb18hq\test\M.E.R.C. Music - Knockout\mixture.wav
+musdb18hq\train\Remember December - C U Next Time\mixture.wav
+musdb18hq\train\Meaxic - Take A Step\mixture.wav
+musdb18hq\test\Louis Cressy Band - Good Time\mixture.wav
+musdb18hq\train\Invisible Familiars - Disturbing Wildlife\mixture.wav
+musdb18hq\train\The Wrong'Uns - Rothko\mixture.wav
+musdb18hq\train\Giselle - Moss\mixture.wav
+musdb18hq\test\Detsky Sad - Walkie Talkie\mixture.wav
+musdb18hq\test\Mu - Too Bright\mixture.wav
+musdb18hq\train\Alexander Ross - Velvet Curtain\mixture.wav
+musdb18hq\train\ANiMAL - Rockshow\mixture.wav
+musdb18hq\train\Jokers, Jacks & Kings - Sea Of Leaves\mixture.wav
+musdb18hq\test\The Mountaineering Club - Mallory\mixture.wav
+musdb18hq\train\Snowmine - Curfews\mixture.wav
+musdb18hq\train\Johnny Lokke - Promises & Lies\mixture.wav
+musdb18hq\train\Wall Of Death - Femme\mixture.wav
+musdb18hq\train\ANiMAL - Clinic A\mixture.wav
+musdb18hq\train\Young Griffo - Pennies\mixture.wav
+musdb18hq\train\Atlantis Bound - It Was My Fault For Waiting\mixture.wav
+musdb18hq\test\Enda Reilly - Cur An Long Ag Seol\mixture.wav
+musdb18hq\test\Hollow Ground - Ill Fate\mixture.wav
+musdb18hq\test\PR - Oh No\mixture.wav
+musdb18hq\test\The Doppler Shift - Atrophy\mixture.wav

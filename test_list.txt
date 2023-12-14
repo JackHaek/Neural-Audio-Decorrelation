@@ -1,0 +1,30 @@
+musdb18hq\train\Music Delta - Disco\mixture.wav
+musdb18hq\test\The Easton Ellises - Falcon 69\mixture.wav
+musdb18hq\train\Celestial Shore - Die For Us\mixture.wav
+musdb18hq\train\Matthew Entwistle - Dont You Ever\mixture.wav
+musdb18hq\test\Zeno - Signs\mixture.wav
+musdb18hq\train\Music Delta - Rock\mixture.wav
+musdb18hq\test\BKS - Too Much\mixture.wav
+musdb18hq\train\Skelpolu - Human Mistakes\mixture.wav
+musdb18hq\train\Jay Menon - Through My Eyes\mixture.wav
+musdb18hq\train\Music Delta - Punk\mixture.wav
+musdb18hq\train\The So So Glos - Emergency\mixture.wav
+musdb18hq\train\Swinging Steaks - Lost My Way\mixture.wav
+musdb18hq\test\Raft Monk - Tiring\mixture.wav
+musdb18hq\test\James Elder & Mark M Thompson - The English Actor\mixture.wav
+musdb18hq\test\Bobby Nobody - Stitch Up\mixture.wav
+musdb18hq\train\Music Delta - Beatles\mixture.wav
+musdb18hq\train\The Scarlet Brand - Les Fleurs Du Mal\mixture.wav
+musdb18hq\test\AM Contra - Heart Peripheral\mixture.wav
+musdb18hq\train\James May - On The Line\mixture.wav
+musdb18hq\train\Voelund - Comfort Lives In Belief\mixture.wav
+musdb18hq\train\Patrick Talbot - A Reason To Leave\mixture.wav
+musdb18hq\train\Night Panther - Fire\mixture.wav
+musdb18hq\test\Skelpolu - Resurrection\mixture.wav
+musdb18hq\train\Phre The Eon - Everybody's Falling Apart\mixture.wav
+musdb18hq\test\Ben Carrigan - We'll Talk About It All Tonight\mixture.wav
+musdb18hq\train\Johnny Lokke - Whisper To A Scream\mixture.wav
+musdb18hq\test\Triviul feat. The Fiend - Widow\mixture.wav
+musdb18hq\test\Buitraker - Revo X\mixture.wav
+musdb18hq\train\Actions - South Of The Water\mixture.wav
+musdb18hq\train\Triviul - Dorothy\mixture.wav

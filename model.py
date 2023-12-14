@@ -1,6 +1,48 @@
 import tensorflow as tf
+import random
+
+from pathlib import Path
 
 print("TensorFlow version:", tf.__version__)
+
+
+
+
+# https://www.tensorflow.org/tutorials/audio/simple_audio
+
+# Train-validation-test split is done by generate_file_list.py
+def read_file_names_from_list(list_name):
+    with open(list, 'r', encoding='utf-8') as f:
+        lst = [line if len(line) != 0 for line in f]
+        return lst
+
+train_songs = read_file_names_from_list('train_list.txt')
+validation_songs = read_file_names_from_list('validation_list.txt')
+test_songs = read_file_names_from_list('test_list.txt')
+
+def load_train_wav():
+    for path in train_songs:
+        wav = tf.audio.decode_wav(path)
+        # Resample to 22050 Hz
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Number of frequency buckets during inference
 K = 129
@@ -183,6 +225,10 @@ discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1
 
 def train_step(x):
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+        big_x_gen = tf.signal.stft(x, 116, 58)
+        big_y_gen = generator(big_x_gen)
+        y = tf.signal.inverse_stft(big_y_gen, 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
+        
         big_x = tf.signal.stft(x, 1024, 256)
-        big_y = generator(big_x)
+        big_y = tf.signal.stft(y, 1024, 256)
     assert False
