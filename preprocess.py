@@ -29,15 +29,15 @@ for songlist, partname in ((train_songs, 'train'), (validation_songs, 'validatio
         sample_count = audio.shape[0]
         channel_count = audio.shape[1]
         
-        for j in range((sample_count + 66149) // 66150):
+        for j in range((sample_count + 66119) // 66120):
             segment = None
             if j == 0:
-                segment = tf.concat((tf.zeros((9280, channel_count)), audio[:66150]), axis=0)
-            elif (j + 1) * 66150 > sample_count:
-                segment = audio[66150*j - 9280:]
-                segment = tf.concat((segment, tf.zeros((66150 + 9280 - segment.shape[0], channel_count))), axis=0)
+                segment = tf.concat((tf.zeros((9280, channel_count)), audio[:66120]), axis=0)
+            elif (j + 1) * 66120 > sample_count:
+                segment = audio[66120*j - 9280:]
+                segment = tf.concat((segment, tf.zeros((66120 + 9280 - segment.shape[0], channel_count))), axis=0)
             else:
-                segment = audio[66150*j - 9280 : 66150*(j+1)]
+                segment = audio[66120*j - 9280 : 66120*(j+1)]
             
             this_file_path = this_dir / f"{i:03}-{j:05}.wav"
             
