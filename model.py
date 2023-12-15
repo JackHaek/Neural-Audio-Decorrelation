@@ -1,6 +1,4 @@
 import tensorflow as tf
-import random
-
 from pathlib import Path
 
 print("TensorFlow version:", tf.__version__)
@@ -9,27 +7,10 @@ print("TensorFlow version:", tf.__version__)
 
 
 # https://www.tensorflow.org/tutorials/audio/simple_audio
-
-# Train-validation-test split is done by generate_file_list.py
-def read_file_names_from_list(list_name):
-    with open(list, 'r', encoding='utf-8') as f:
-        lst = [line if len(line) != 0 for line in f]
-        return lst
-
-train_songs = read_file_names_from_list('train_list.txt')
-validation_songs = read_file_names_from_list('validation_list.txt')
-test_songs = read_file_names_from_list('test_list.txt')
-
-def load_train_wav():
-    for path in train_songs:
-        wav = tf.audio.decode_wav(path)
-        # Resample to 22050 Hz
-
-
-
-
-
-
+# Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
+full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/')
+print(full_ds)
+assert False    
 
 
 
