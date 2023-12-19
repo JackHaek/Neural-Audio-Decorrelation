@@ -8,9 +8,14 @@ print("TensorFlow version:", tf.__version__)
 
 # https://www.tensorflow.org/tutorials/audio/simple_audio
 # Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
-full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/')
-print(full_ds)
-assert False    
+full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/', class_names=('train', 'validation', 'test'))
+# Get rid of the labels and divide into parts
+train_ds = full_ds.unbatch().filter(lambda _, x: x == 0).map(lambda x, _: x).batch(16)
+val_ds = full_ds.unbatch().filter(lambda _, x: x == 1).map(lambda x, _: x).batch(16)
+test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(16)
+
+# Each entry taken from one of these datasets has dimensions (batch_size, time frames, channels)
+# (in this case, (16, 75400, 2) for full batches)
 
 
 
@@ -34,7 +39,7 @@ relu = tf.keras.activations.relu
 
 mel_matrix_what = tf.signal.linear_to_mel_weight_matrix(M, 513, sample_rate=22050)
 
-class Complex2Real(tf.keras.Layer):
+class Complex2Real(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
 
@@ -44,7 +49,7 @@ class Complex2Real(tf.keras.Layer):
         # Help, what shape is the tensor
         assert False
 
-class Real2Complex(tf.keras.Layer):
+class Real2Complex(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
 
@@ -56,10 +61,13 @@ class Real2Complex(tf.keras.Layer):
 
 generator = tf.keras.Sequential([
     Complex2Real(),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='causal', groups=K),
+    # Even though they're causal convolutions, we expect the caller to init
+    # the padding, with useful info or with zeroes as appropriate, so use
+    # "valid" padding here.
+    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K),
     Real2Complex()
 ])
 
@@ -110,7 +118,7 @@ def generator_mel_loss(big_x, big_y):
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class PeriodDiscriminator(tf.keras.Layer):
+class PeriodDiscriminator(tf.keras.layers.Layer):
     def __init__(self, period):
         super().__init__()
         self.period = period
@@ -157,7 +165,7 @@ def append_weight_normalized_layer(layer_list, layer):
     layer_list.append(layer)
     layer_list.append(tf.keras.layers.UnitNormalization())
 
-class ScaleDiscriminator(tf.keras.Layer):
+class ScaleDiscriminator(tf.keras.layers.Layer):
     def __init__(self, mean_pool_count, use_spectral_norm):
         super().__init__()
         add_normalized_layer = append_spectral_normalized_layer if use_spectral_norm else append_weight_normalized_layer
@@ -201,15 +209,25 @@ def discriminator_adversarial_loss_part(d_of_x, d_of_y):
 coh_loss_scale = tf.constant(2.5)
 mel_loss_scale = tf.constant(5.625)
 
-generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
-discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
+generator_optimizer = tf.keras.optimizers.experimental.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
+discriminator_optimizer = tf.keras.optimizers.experimental.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
 
 def train_step(x):
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        big_x_gen = tf.signal.stft(x, 116, 58)
-        big_y_gen = generator(big_x_gen)
+        big_x_gen_0 = tf.signal.stft(x[:,:,0], 116, 58)
+        big_x_gen_1 = tf.signal.stft(x[:,:,1], 116, 58)
+        # Each channel of the audio has an FFT size of (1299, 65)
+        # (116 fits into 128, meaning the frequencies range 0-64, and (1300 - 1) * 58 STFT frames could be made)
+        # (This includes 160 frames of context that we added in the preprocessing stage.)
+        # Anyway, the shape of big_x_gen_0 is now (batch size, STFT time frames, STFT freq buckets)
+        # big_x_gen = None
+        big_y_gen_0 = generator(big_x_gen_0)
+        big_y_gen = None
+        assert False
         y = tf.signal.inverse_stft(big_y_gen, 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
         
         big_x = tf.signal.stft(x, 1024, 256)
         big_y = tf.signal.stft(y, 1024, 256)
     assert False
+
+train_step(next(iter(train_ds.take(1))))
