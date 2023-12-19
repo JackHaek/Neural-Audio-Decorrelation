@@ -31,7 +31,7 @@ test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batc
 
 
 # Number of frequency buckets during inference
-K = 129
+K = 65
 # Number of mel frequency bands during loss calculation
 M = 80
 relu = tf.keras.activations.relu
@@ -44,17 +44,22 @@ class Complex2Real(tf.keras.layers.Layer):
         super().__init__()
 
     def call(self, inputs):
+        # Add a another dimension of size 1 to make this easier
+        inputs = inputs[..., tf.newaxis]
         real_inputs = tf.math.real(inputs)
         imag_inputs = tf.math.imag(inputs)
-        # Help, what shape is the tensor
-        assert False
+        # Stack real and imaginary across the new axis, to put the real and imaginary components next to each other
+        output = tf.concat((real_inputs, imag_inputs), axis=3)
+        output_shape = output.shape
+        output = tf.reshape(output, (output_shape[0], output_shape[1], -1))
+        return output
+        
 
 class Real2Complex(tf.keras.layers.Layer):
     def __init__(self):
         super().__init__()
 
     def call(self, inputs):
-        # Help, what shape is the tensor
         real_inputs = inputs[:,:,::2]
         imag_inputs = inputs[:,:,1::2]
         return tf.complex(real_inputs, imag_inputs)
@@ -64,10 +69,10 @@ generator = tf.keras.Sequential([
     # Even though they're causal convolutions, we expect the caller to init
     # the padding, with useful info or with zeroes as appropriate, so use
     # "valid" padding here.
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K, activation=relu),
-    tf.keras.layers.Conv1D(filters=K, kernel_size=40, padding='valid', groups=K),
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*2,  kernel_size=40, padding='valid', groups=K),
     Real2Complex()
 ])
 
