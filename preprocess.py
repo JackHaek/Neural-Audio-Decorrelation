@@ -24,6 +24,10 @@ for songlist, partname in ((train_songs, 'train'), (validation_songs, 'validatio
         # https://github.com/keras-team/keras/blob/68f9af408a1734704746f7e6fa9cfede0d6879d8/keras/utils/audio_dataset.py#L392-L410
         wav_file = tf.io.read_file(songpath)
         audio, sample_rate = tf.audio.decode_wav(wav_file)
+        # Mix down to mono first
+        audio = tf.reduce_mean(audio, axis=1)
+        audio = audio[..., tf.newaxis]
+        # Then resample
         if sample_rate != 22050:
             audio = tfio.audio.resample(audio, tf.cast(sample_rate, tf.int64), tf.cast(22050, tf.int64))
         sample_count = audio.shape[0]

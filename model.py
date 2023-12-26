@@ -28,9 +28,9 @@ test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batc
 
 
 # Number of frequency buckets during inference
-K = 65
+K = tf.constant(65)
 # Number of mel frequency bands during loss calculation
-M = 80
+M = tf.constant(80)
 
 mel_xform_matrix = tf.signal.linear_to_mel_weight_matrix(M, 513, sample_rate=22050)
 
@@ -251,10 +251,12 @@ mel_loss_scale = tf.constant(5.625)
 generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
 discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
 
+@tf.function
 def train_step(x):
+    print('Tracing! train_step')
     generator_loss = None
     discrim_loss = None
-    with tf.GradientTape() as gen_tape: # , tf.GradientTape() as disc_tape:
+    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         x_0 = x[:,:,0]
         x_1 = x[:,:,1]
         big_x_gen_0 = tf.signal.stft(x_0, 116, 58)
@@ -275,34 +277,36 @@ def train_step(x):
         y_cut = y_cut[..., tf.newaxis]
         
         # The discriminators are slow! Don't run them while testing loss calculations
-        # x_discrim_output = discriminator(x_cut)
-        # y_discrim_output = discriminator(y_cut)
+        x_discrim_output = discriminator(x_cut)
+        y_discrim_output = discriminator(y_cut)
         
         # Say that the discriminator did its job perfectly
         # x_discrim_output = tf.ones((x_0.shape[0] * 2, 8))
         # y_discrim_output = tf.zeros((x_0.shape[0] * 2, 8))
         
-        # assert x_discrim_output.shape == (x_0.shape[0] * 2, 8)
+        tf.debugging.assert_shapes([
+            (x_discrim_output, (x.output_shape[0] * 2, 8))
+        ])
         
         big_x = tf.signal.stft(tf.squeeze(x_cut, [2]), 1024, 256)
         big_y = tf.signal.stft(tf.squeeze(y_cut, [2]), 1024, 256)
         
         coh_loss = generator_coherence_loss(big_x, big_y)
         mel_loss = generator_mel_loss(big_x, big_y)
-        # adv_loss = generator_adversarial_loss(y_discrim_output)
+        adv_loss = generator_adversarial_loss(y_discrim_output)
         
         generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale # + adv_loss
-        # discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
+        discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
 
-    print('Calculating generator gradients')
+    tf.print('Calculating generator gradients')
     gen_gradients = gen_tape.gradient(generator_loss, generator.trainable_variables)
-    # print('Calculating discriminator gradients')
-    # discrim_gradients = disc_tape.gradient(discrim_loss, discriminator.trainable_variables)
-    print('Applying generator gradients')
+    tf.print('Calculating discriminator gradients')
+    discrim_gradients = disc_tape.gradient(discrim_loss, discriminator.trainable_variables)
+    tf.print('Applying generator gradients')
     generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
-    # print('Applying discriminator gradients')
-    # discriminator_optimizer.apply_gradients(zip(discrim_gradients, discriminator.trainable_variables))
-    print('Generator loss was', generator_loss)
+    tf.print('Applying discriminator gradients')
+    discriminator_optimizer.apply_gradients(zip(discrim_gradients, discriminator.trainable_variables))
+    tf.print('Generator loss was', generator_loss)
 
 thing = next(iter(train_ds.take(1)))
 train_step(thing)
