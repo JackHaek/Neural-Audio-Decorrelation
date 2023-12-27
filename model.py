@@ -28,9 +28,10 @@ test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batc
 
 
 # Number of frequency buckets during inference
-K = tf.constant(65)
+K = 65 # tf.constant(65)
 # Number of mel frequency bands during loss calculation
 M = tf.constant(80)
+M_float = tf.cast(M, tf.float32)
 
 mel_xform_matrix = tf.signal.linear_to_mel_weight_matrix(M, 513, sample_rate=22050)
 
@@ -80,22 +81,22 @@ def generator_coherence_loss(big_x, big_y):
     # need to reduce across only the time dimension; keep separate freqs
     numerator = tf.reduce_sum(big_x * big_y, axis=1)
     numerator = tf.abs(numerator)
-    print(numerator.shape)
+    # tf.print(numerator.shape)
     numerator = tf.tensordot(numerator, mel_xform_matrix, 1)
-    print(numerator.shape)
+    # tf.print(numerator.shape)
     denominator = tf.reduce_sum(tf.square(tf.abs(big_y)), axis=1)
     denominator = denominator * tf.reduce_sum(tf.square(tf.abs(big_x)), axis=1)
     denominator = tf.sqrt(denominator)
     denominator = tf.tensordot(denominator, mel_xform_matrix, 1)
     # This should be a scalar
-    return tf.math.reduce_sum(numerator / denominator) / M
+    return tf.math.reduce_sum(numerator / denominator) / M_float
 
 def generator_mel_loss(big_x, big_y):
     # big_x = tf.signal.stft(x, 1024, 256)
     # big_y = tf.signal.stft(y, 1024, 256)
     y_term = tf.tensordot(tf.square(tf.abs(big_y)), mel_xform_matrix, 1)
     x_term = tf.tensordot(tf.square(tf.abs(big_x)), mel_xform_matrix, 1)
-    return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M / x_term.shape[1]
+    return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M_float / x_term.shape[1]
 
 # Adapted from jik876/hifi-gan, available under the MIT license
 # MIT License
@@ -257,45 +258,39 @@ def train_step(x):
     generator_loss = None
     discrim_loss = None
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        x_0 = x[:,:,0]
-        x_1 = x[:,:,1]
-        big_x_gen_0 = tf.signal.stft(x_0, 116, 58)
-        big_x_gen_1 = tf.signal.stft(x_1, 116, 58)
-        big_x_gen = tf.concat((big_x_gen_0, big_x_gen_1), axis=0)
-        # Each channel of the audio has an FFT size of (1299, 65)
+        x = tf.squeeze(x, [2])
+        tf.print(x.shape)
+        big_x_gen = tf.signal.stft(x, 116, 58)
+        # Each channel of the audio has an FFT size of (1299, 65), and we have one channel (mono audio)
         # (116 fits into 128, meaning the frequencies range 0-64, and (1300 - 1) * 58 STFT frames could be made)
         # (This includes 160 frames of context that we added in the preprocessing stage.)
-        # Anyway, the shape of big_x_gen is now (batch size * 2, STFT time frames, STFT freq buckets)
+        # Anyway, the shape of big_x_gen is now (batch size, STFT time frames, STFT freq buckets)
         big_y_gen = generator(big_x_gen)
-        y_0 = tf.signal.inverse_stft(big_y_gen[:x.shape[0]], 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
-        y_1 = tf.signal.inverse_stft(big_y_gen[x.shape[0]:], 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
+        y = tf.signal.inverse_stft(big_y_gen, 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
         
-        # The HiFi-GAN discriminators are meant for mono signals
-        x_cut = tf.concat((x_0[:,-66120:], x_1[:,-66120:]), axis=0)
-        y_cut = tf.concat((y_0[:,-66120:], y_1[:,-66120:]), axis=0)
-        x_cut = x_cut[..., tf.newaxis]
-        y_cut = y_cut[..., tf.newaxis]
+        x_cut = x[:,-66120:]
+        y_cut = y[:,-66120:]
         
         # The discriminators are slow! Don't run them while testing loss calculations
-        x_discrim_output = discriminator(x_cut)
-        y_discrim_output = discriminator(y_cut)
+        x_discrim_output = discriminator(x_cut[..., tf.newaxis])
+        y_discrim_output = discriminator(y_cut[..., tf.newaxis])
         
         # Say that the discriminator did its job perfectly
-        # x_discrim_output = tf.ones((x_0.shape[0] * 2, 8))
-        # y_discrim_output = tf.zeros((x_0.shape[0] * 2, 8))
+        # x_discrim_output = tf.ones((x_0.shape[0], 8))
+        # y_discrim_output = tf.zeros((x_0.shape[0], 8))
         
         tf.debugging.assert_shapes([
-            (x_discrim_output, (x.output_shape[0] * 2, 8))
+            (x_discrim_output, (x.shape[0], 8))
         ])
         
-        big_x = tf.signal.stft(tf.squeeze(x_cut, [2]), 1024, 256)
-        big_y = tf.signal.stft(tf.squeeze(y_cut, [2]), 1024, 256)
+        big_x = tf.signal.stft(x_cut, 1024, 256)
+        big_y = tf.signal.stft(y_cut, 1024, 256)
         
         coh_loss = generator_coherence_loss(big_x, big_y)
         mel_loss = generator_mel_loss(big_x, big_y)
         adv_loss = generator_adversarial_loss(y_discrim_output)
         
-        generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale # + adv_loss
+        generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale + adv_loss
         discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
 
     tf.print('Calculating generator gradients')
