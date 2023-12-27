@@ -1,5 +1,6 @@
 import tensorflow as tf
 from pathlib import Path
+import time
 
 print("TensorFlow version:", tf.__version__)
 
@@ -28,7 +29,7 @@ test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batc
 
 
 # Number of frequency buckets during inference
-K = 65 # tf.constant(65)
+K = 65
 # Number of mel frequency bands during loss calculation
 M = tf.constant(80)
 M_float = tf.cast(M, tf.float32)
@@ -252,8 +253,13 @@ mel_loss_scale = tf.constant(5.625)
 generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
 discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
 
+train_gen_loss_metric = tf.keras.metrics.Mean('generator_loss', dtype=tf.float32)
+train_disc_loss_metric = tf.keras.metrics.Mean('disc_loss', dtype=tf.float32)
+valid_gen_loss_metric = tf.keras.metrics.Mean('validation_generator_loss', dtype=tf.float32)
+valid_disc_loss_metric = tf.keras.metrics.Mean('validation_discriminator_loss', dtype=tf.float32)
+
 @tf.function
-def train_step(x):
+def train_step(x, train=True):
     print('Tracing! train_step')
     generator_loss = None
     discrim_loss = None
@@ -293,19 +299,42 @@ def train_step(x):
         generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale + adv_loss
         discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
 
-    tf.print('Calculating generator gradients')
-    gen_gradients = gen_tape.gradient(generator_loss, generator.trainable_variables)
-    tf.print('Calculating discriminator gradients')
-    discrim_gradients = disc_tape.gradient(discrim_loss, discriminator.trainable_variables)
-    tf.print('Applying generator gradients')
-    generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
-    tf.print('Applying discriminator gradients')
-    discriminator_optimizer.apply_gradients(zip(discrim_gradients, discriminator.trainable_variables))
-    tf.print('Generator loss was', generator_loss)
+    if train:
+        # tf.print('Calculating generator gradients')
+        gen_gradients = gen_tape.gradient(generator_loss, generator.trainable_variables)
+        # tf.print('Calculating discriminator gradients')
+        discrim_gradients = disc_tape.gradient(discrim_loss, discriminator.trainable_variables)
+        # tf.print('Applying generator gradients')
+        generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
+        # tf.print('Applying discriminator gradients')
+        discriminator_optimizer.apply_gradients(zip(discrim_gradients, discriminator.trainable_variables))
+    
+    return generator_loss, discrim_loss
 
-thing = next(iter(train_ds.take(1)))
-train_step(thing)
-train_step(thing)
-train_step(thing)
-train_step(thing)
-train_step(thing)
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
+valid_log_dir = 'logs/gradient_tape/' + current_time + '/validation'
+train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
+
+
+def train(epochs):
+    batch_count = 0
+    epoch_count = 0
+    
+    if epochs is not None:
+        for epoch in range(epochs):
+            start_time = time.time()
+            for batch in train_ds:
+                batch_count += 1
+                losses = train_step(batch)
+                train_gen_loss_metric(losses[0])
+                train_disc_loss_metric(losses[1])
+            
+            for batch in valid_ds:
+                train_step(batch, train=False)
+                valid_gen_loss_metric(losses[0])
+                valid_disc_loss_metric(losses[1])
+            end_time = time.time()
+            epoch += 1
+            print('Epoch', epoch, 'completed after', end_time - start_time, 'seconds')
