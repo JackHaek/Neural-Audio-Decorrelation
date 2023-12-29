@@ -320,21 +320,39 @@ valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
 
 def train(epochs):
     batch_count = 0
-    epoch_count = 0
     
-    if epochs is not None:
-        for epoch in range(epochs):
-            start_time = time.time()
-            for batch in train_ds:
-                batch_count += 1
-                losses = train_step(batch)
-                train_gen_loss_metric(losses[0])
-                train_disc_loss_metric(losses[1])
-            
-            for batch in valid_ds:
-                train_step(batch, train=False)
-                valid_gen_loss_metric(losses[0])
-                valid_disc_loss_metric(losses[1])
-            end_time = time.time()
-            epoch += 1
-            print('Epoch', epoch, 'completed after', end_time - start_time, 'seconds')
+    for epoch in range(epochs):
+        start_time = time.time()
+        for batch in train_ds:
+            batch_count += 1
+            losses = train_step(batch)
+            train_gen_loss_metric(losses[0])
+            train_disc_loss_metric(losses[1])
+            with train_summary_writer.as_default():
+                tf.summary.scalar('generator_loss', losses[0], step=batch_count)
+                tf.summary.scalar('disc_loss', losses[1], step=batch_count)
+        
+        for batch in valid_ds:
+            train_step(batch, train=False)
+            valid_gen_loss_metric(losses[0])
+            valid_disc_loss_metric(losses[1])
+        with valid_summary_writer.as_default():
+            tf.summary.scalar('validation_generator_loss', valid_gen_loss_metric.result(), step=batch_count)
+            tf.summary.scalar('validation_discriminator_loss', valid_disc_loss_metric.result(), step=batch_count)
+        end_time = time.time()
+        epoch += 1
+        print('Epoch', epoch, 'completed after', end_time - start_time, 'seconds')
+        
+        template = 'Epoch {}, Training Gen-Loss: {}, Training Disc-Loss: {}, Validation Gen-Loss: {}, Validation Disc-Loss: {}'
+        print (template.format(epoch+1,
+                         train_gen_loss_metric.result(), 
+                         train_disc_loss_metric.result(),
+                         valid_gen_loss_metric.result(), 
+                         valid_disc_loss_metric.result()))
+                         
+        # Reset metrics every epoch
+        train_loss.reset_states()
+        test_loss.reset_states()
+        train_accuracy.reset_states()
+        test_accuracy.reset_states()
+
