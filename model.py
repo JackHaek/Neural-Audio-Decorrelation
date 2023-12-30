@@ -1,6 +1,14 @@
+#!/usr/bin/env python3
 import tensorflow as tf
+import datetime
 from pathlib import Path
 import time
+
+# Spectral normalization layers in Keras were introduced in TF 2.13.0, but ROSIE is running 2.12.0
+try:
+    from tensorflow.keras.layers import SpectralNormalization
+except ImportError:
+    from SpectralNormalization import SpectralNormalization
 
 print("TensorFlow version:", tf.__version__)
 
@@ -355,4 +363,8 @@ def train(epochs):
         test_loss.reset_states()
         train_accuracy.reset_states()
         test_accuracy.reset_states()
+    
+    
 
+train(1)
+print('It completed')
