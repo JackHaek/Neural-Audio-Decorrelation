@@ -4,6 +4,7 @@ import datetime
 from pathlib import Path
 import time
 
+
 # Spectral normalization layers in Keras were introduced in TF 2.13.0, but ROSIE is running 2.12.0
 try:
     from tensorflow.keras.layers import SpectralNormalization
@@ -175,7 +176,7 @@ class PeriodDiscriminator(tf.keras.layers.Layer):
         return output
 
 def append_spectral_normalized_layer(layer_list, layer):
-    layer_list.append(tf.keras.layers.SpectralNormalization(layer))
+    layer_list.append(SpectralNormalization(layer))
 
 def append_weight_normalized_layer(layer_list, layer):
     layer_list.append(layer)
