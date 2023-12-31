@@ -17,9 +17,9 @@ print("TensorFlow version:", tf.__version__)
 # Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
 full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/', class_names=('train', 'validation', 'test'))
 # Get rid of the labels and divide into parts
-train_ds = full_ds.unbatch().filter(lambda _, x: x == 0).map(lambda x, _: x).batch(4)
-val_ds = full_ds.unbatch().filter(lambda _, x: x == 1).map(lambda x, _: x).batch(4)
-test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(4)
+train_ds = full_ds.unbatch().filter(lambda _, x: x == 0).map(lambda x, _: x).batch(16)
+val_ds = full_ds.unbatch().filter(lambda _, x: x == 1).map(lambda x, _: x).batch(16)
+test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(16)
 
 # Each entry taken from one of these datasets has dimensions (batch_size, time frames, channels)
 # (in this case, (16, 75400, 2) for full batches)
@@ -341,7 +341,7 @@ def train(epochs):
                 tf.summary.scalar('generator_loss', losses[0], step=batch_count)
                 tf.summary.scalar('disc_loss', losses[1], step=batch_count)
         
-        for batch in valid_ds:
+        for batch in val_ds:
             train_step(batch, train=False)
             valid_gen_loss_metric(losses[0])
             valid_disc_loss_metric(losses[1])
