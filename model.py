@@ -351,8 +351,7 @@ def train(epochs):
             tf.summary.scalar('validation_generator_loss', valid_gen_loss_metric.result(), step=batch_count)
             tf.summary.scalar('validation_discriminator_loss', valid_disc_loss_metric.result(), step=batch_count)
         end_time = time.time()
-        epoch += 1
-        print('Epoch', epoch, 'completed after', end_time - start_time, 'seconds')
+        print('Epoch', epoch+1, 'completed after', end_time - start_time, 'seconds')
         
         template = 'Epoch {}, Training Gen-Loss: {}, Training Disc-Loss: {}, Validation Gen-Loss: {}, Validation Disc-Loss: {}'
         print (template.format(epoch+1,
@@ -362,10 +361,10 @@ def train(epochs):
                          valid_disc_loss_metric.result()))
                          
         # Reset metrics every epoch
-        train_loss.reset_states()
-        test_loss.reset_states()
-        train_accuracy.reset_states()
-        test_accuracy.reset_states()
+        train_gen_loss_metric.reset_states()
+        valid_gen_loss_metric.reset_states()
+        train_disc_loss_metric.reset_states()
+        valid_disc_loss_metric.reset_states()
     checkpoint.save(file_prefix=checkpoint_prefix)
     
     
