@@ -326,6 +326,8 @@ valid_log_dir = 'logs/gradient_tape/' + current_time + '/validation'
 train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
 
+checkpoint_prefix = './training_checkpoints/ckpt'
+checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, discriminator_optimizer=discriminator_optimizer, generator=generator, discriminator=discriminator)
 
 def train(epochs):
     batch_count = 0
@@ -364,6 +366,7 @@ def train(epochs):
         test_loss.reset_states()
         train_accuracy.reset_states()
         test_accuracy.reset_states()
+    checkpoint.save(file_prefix=checkpoint_prefix)
     
     
 
