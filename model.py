@@ -17,9 +17,9 @@ print("TensorFlow version:", tf.__version__)
 # Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
 full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/', class_names=('train', 'validation', 'test'))
 # Get rid of the labels and divide into parts
-train_ds = full_ds.unbatch().filter(lambda _, x: x == 0).map(lambda x, _: x).batch(16)
-val_ds = full_ds.unbatch().filter(lambda _, x: x == 1).map(lambda x, _: x).batch(16)
-test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(16)
+train_ds = full_ds.unbatch().filter(lambda _, x: x == 0).map(lambda x, _: x).batch(4)
+val_ds = full_ds.unbatch().filter(lambda _, x: x == 1).map(lambda x, _: x).batch(4)
+test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(4)
 
 # Each entry taken from one of these datasets has dimensions (batch_size, time frames, channels)
 # (in this case, (16, 75400, 2) for full batches)
@@ -372,3 +372,11 @@ def train(epochs):
 
 train(1)
 print('It completed')
+
+
+
+
+
+
+
+
