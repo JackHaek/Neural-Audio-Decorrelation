@@ -259,8 +259,8 @@ discriminator = Discriminator()
 coh_loss_scale = tf.constant(2.5)
 mel_loss_scale = tf.constant(5.625)
 
-generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
-discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3, beta_1=0.8, beta_2=0.99)
+generator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3/4, beta_1=0.8, beta_2=0.99)
+discriminator_optimizer = tf.keras.optimizers.AdamW(learning_rate=1.6e-3/4, beta_1=0.8, beta_2=0.99)
 
 train_gen_loss_metric = tf.keras.metrics.Mean('generator_loss', dtype=tf.float32)
 train_disc_loss_metric = tf.keras.metrics.Mean('disc_loss', dtype=tf.float32)
