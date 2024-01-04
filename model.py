@@ -4,6 +4,15 @@ import datetime
 from pathlib import Path
 import time
 
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
+valid_log_dir = 'logs/gradient_tape/' + current_time + '/validation'
+train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
+
+tf.debugging.experimental.enable_dump_debug_info('logs/gradient_tape/' + current_time + '/debug',
+        tensor_debug_mode='FULL_HEALTH',
+        circular_buffer_size=-1)
 
 # Spectral normalization layers in Keras were introduced in TF 2.13.0, but ROSIE is running 2.12.0
 try:
@@ -314,6 +323,7 @@ def train_step(x, train=True):
         
         generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale + adv_loss
         discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
+    tf.debugging.assert_all_finite((generator_loss, discrim_loss), 'why is the loss not a normal number')
 
     if train:
         # tf.print('Calculating generator gradients')
@@ -324,14 +334,7 @@ def train_step(x, train=True):
         generator_optimizer.apply_gradients(zip(gen_gradients, generator.trainable_variables))
         # tf.print('Applying discriminator gradients')
         discriminator_optimizer.apply_gradients(zip(discrim_gradients, discriminator.trainable_variables))
-    
     return generator_loss, discrim_loss
-
-current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-train_log_dir = 'logs/gradient_tape/' + current_time + '/train'
-valid_log_dir = 'logs/gradient_tape/' + current_time + '/validation'
-train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
 
 checkpoint_prefix = './training_checkpoints/ckpt'
 checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, discriminator_optimizer=discriminator_optimizer, generator=generator, discriminator=discriminator)
