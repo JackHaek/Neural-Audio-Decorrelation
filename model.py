@@ -165,8 +165,15 @@ class PeriodDiscriminator(tf.keras.layers.Layer):
         frame_count = input_shape[1]
         period = self.period
         padding = (period - frame_count % period) % period
-        self.convs_list.insert(0, tf.keras.layers.ZeroPadding1D((0, padding)))
-        self.convs = tf.keras.Sequential(self.convs_list)
+        # TF is perfectly fine with *inferring* and *training* using an insert into the convs_list...
+        # but *checkpointing* apparently requires only ever appending to data structures.
+        # I guess I should've been using an IDE... or something that isn't Python, at least.
+        convs = tf.keras.Sequential()
+        convs.add(tf.keras.layers.ZeroPadding1D((0, padding)))
+        for c in self.convs_list:
+            convs.add(c)
+            
+        self.convs = convs
     
     def call(self, inputs):
         output = self.convs(inputs)
