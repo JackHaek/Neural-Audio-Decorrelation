@@ -348,7 +348,8 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer, discri
 
 def train(epochs):
     batch_count = 0
-    
+
+    print(f"Epochs is {epochs}. If this isn't the right number, abort now")
     for epoch in range(epochs):
         start_time = time.time()
         for batch in train_ds:
