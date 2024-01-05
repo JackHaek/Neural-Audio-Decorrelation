@@ -10,9 +10,9 @@ valid_log_dir = 'logs/gradient_tape/' + current_time + '/validation'
 train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 valid_summary_writer = tf.summary.create_file_writer(valid_log_dir)
 
-tf.debugging.experimental.enable_dump_debug_info('logs/gradient_tape/' + current_time + '/debug',
-        tensor_debug_mode='FULL_HEALTH',
-        circular_buffer_size=-1)
+# tf.debugging.experimental.enable_dump_debug_info('logs/gradient_tape/' + current_time + '/debug',
+#         tensor_debug_mode='FULL_HEALTH',
+#         circular_buffer_size=-1)
 
 # Spectral normalization layers in Keras were introduced in TF 2.13.0, but ROSIE is running 2.12.0
 try:
@@ -305,6 +305,8 @@ def train_step(x, train=True):
         # The discriminators are slow! Don't run them while testing loss calculations
         x_discrim_output = discriminator(x_cut[..., tf.newaxis])
         y_discrim_output = discriminator(y_cut[..., tf.newaxis])
+
+        tf.debugging.assert_all_finite((x_discrim_output, y_discrim_output), 'discrim output is non-finite')
         
         # Say that the discriminator did its job perfectly
         # x_discrim_output = tf.ones((x_0.shape[0], 8))
@@ -318,11 +320,15 @@ def train_step(x, train=True):
         big_y = tf.signal.stft(y_cut, 1024, 256)
         
         coh_loss = generator_coherence_loss(big_x, big_y)
+        tf.debugging.assert_all_finite((coh_loss,), 'coherence loss')
         mel_loss = generator_mel_loss(big_x, big_y)
+        tf.debugging.assert_all_finite((mel_loss,), 'mel loss')
         adv_loss = generator_adversarial_loss(y_discrim_output)
+        tf.debugging.assert_all_finite((adv_loss,), 'gen adv loss')
         
         generator_loss = coh_loss * coh_loss_scale + mel_loss * mel_loss_scale + adv_loss
         discrim_loss = discriminator_adversarial_loss(x_discrim_output, y_discrim_output)
+        tf.debugging.assert_all_finite((discrim_loss,), 'discrim adv loss')
     tf.debugging.assert_all_finite((generator_loss, discrim_loss), 'why is the loss not a normal number')
 
     if train:
