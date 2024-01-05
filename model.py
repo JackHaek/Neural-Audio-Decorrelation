@@ -106,9 +106,10 @@ def generator_coherence_loss(big_x, big_y):
     denominator = tf.reduce_sum(tf.square(tf.abs(big_y)), axis=1)
     denominator = denominator * tf.reduce_sum(tf.square(tf.abs(big_x)), axis=1)
     denominator = tf.sqrt(denominator)
+    tf.debugging.assert_all_finite((denominator,), 'coherence loss sqrt')
     denominator = tf.tensordot(denominator, mel_xform_matrix, 1)
     # This should be a scalar
-    return tf.math.reduce_sum(numerator / denominator) / M_float
+    return tf.math.reduce_sum(numerator / (denominator + tf.constant(1e-8))) / M_float
 
 def generator_mel_loss(big_x, big_y):
     # big_x = tf.signal.stft(x, 1024, 256)
@@ -385,7 +386,7 @@ def train(epochs):
     
     
 
-train(1)
+train(5)
 print('It completed')
 
 

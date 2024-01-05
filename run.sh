@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:t4:1
 #SBATCH --cpus-per-gpu=8
-#SBATCH --time=10
+#SBATCH --time=480
 
 SCRIPT_NAME="CSC-4651 HF audio decorrelator"
 

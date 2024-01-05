@@ -1,3 +1,11 @@
 # Dataset
 musdb18hq
 musdb18hq-processed
+
+# Output
+logs
+slurm-*
+training_checkpoints
+
+# Python
+__pycache__
