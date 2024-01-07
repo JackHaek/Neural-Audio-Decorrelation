@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+import tensorflow as tf
+import datetime
+from pathlib import Path
+import time
+
+# Spectral normalization layers in Keras were introduced in TF 2.13.0, but ROSIE is running 2.12.0
+try:
+    from tensorflow.keras.layers import SpectralNormalization
+except ImportError:
+    from SpectralNormalization import SpectralNormalization
+
+print("TensorFlow version:", tf.__version__)
+
+# https://www.tensorflow.org/tutorials/audio/simple_audio
+# Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
+full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/', class_names=('train', 'validation', 'test'))
+# Get rid of the labels and divide into parts
+test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(4)
+
+# Each entry taken from one of these datasets has dimensions (batch_size, time frames, channels)
+# (in this case, (4, 75400, 1) for full batches)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Number of frequency buckets during inference
+K = 65
+# Number of mel frequency bands during loss calculation
+M = tf.constant(80)
+M_float = tf.cast(M, tf.float32)
+
+mel_xform_matrix = tf.signal.linear_to_mel_weight_matrix(M, 513, sample_rate=22050)
+
+class Complex2Real(tf.keras.layers.Layer):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, inputs):
+        # Add a another dimension of size 1 to make this easier
+        inputs = inputs[..., tf.newaxis]
+        real_inputs = tf.math.real(inputs)
+        imag_inputs = tf.math.imag(inputs)
+        # Stack real and imaginary across the new axis, to put the real and imaginary components next to each other
+        output = tf.concat((real_inputs, imag_inputs), axis=3)
+        output_shape = output.shape
+        output = tf.reshape(output, (output_shape[0], output_shape[1], -1))
+        return output
+        
+
+class Real2Complex(tf.keras.layers.Layer):
+    def __init__(self):
+        super().__init__()
+
+    def call(self, inputs):
+        real_inputs = inputs[:,:,::2]
+        imag_inputs = inputs[:,:,1::2]
+        return tf.complex(real_inputs, imag_inputs)
+
+relu = tf.keras.activations.relu
+generator = tf.keras.Sequential([
+    Complex2Real(),
+    # Even though they're causal convolutions, we expect the caller to init
+    # the padding, with useful info or with zeroes as appropriate, so use
+    # "valid" padding here.
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*16, kernel_size=40, padding='valid', groups=K, activation=relu),
+    tf.keras.layers.Conv1D(filters=K*2,  kernel_size=40, padding='valid', groups=K),
+    Real2Complex()
+])
+
+def generator_log_spectrogram_loss(big_x, big_y):
+    # big_x = tf.signal.stft(x, 1024, 256)
+    # big_y = tf.signal.stft(y, 1024, 256)
+    y_term = tf.tensordot(tf.square(tf.abs(tf.math.log(big_y))), mel_xform_matrix, 1)
+    x_term = tf.tensordot(tf.square(tf.abs(tf.math.log(big_x))), mel_xform_matrix, 1)
+    return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M_float / x_term.shape[1]
+
+
+checkpoint_prefix = './training_checkpoints/ckpt'
+checkpoint = tf.train.Checkpoint(generator=generator)
+status = checkpoint.restore(checkpoint_prefix+'-1')
+status.assert_existing_objects_matched()
+
+
+
+def infer(x):
+    x = tf.squeeze(x, [2])
+    tf.print(x.shape)
+    big_x_gen = tf.signal.stft(x, 116, 58)
+    # Each channel of the audio has an FFT size of (1299, 65), and we have one channel (mono audio)
+    # (116 fits into 128, meaning the frequencies range 0-64, and (1300 - 1) * 58 STFT frames could be made)
+    # (This includes 160 frames of context that we added in the preprocessing stage.)
+    # Anyway, the shape of big_x_gen is now (batch size, STFT time frames, STFT freq buckets)
+    big_y_gen = generator(big_x_gen)
+    y = tf.signal.inverse_stft(big_y_gen, 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
+    tf.print(y)
+    
+    x_cut = x[:,-66120:]
+    y_cut = y[:,-66120:]
+
+
+infer(next(iter(test_ds.take(1))))
+
