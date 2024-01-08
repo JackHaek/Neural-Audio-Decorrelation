@@ -16,7 +16,8 @@ print("TensorFlow version:", tf.__version__)
 # Run generate_file_list.py and preprocess.py first to create a simple enough audio dataset to easily import
 full_ds = tf.keras.utils.audio_dataset_from_directory('musdb18hq-processed/', class_names=('train', 'validation', 'test'))
 # Get rid of the labels and divide into parts
-test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(4)
+# Note that we effectively have batching off now. I want to access them all individually.
+test_ds = full_ds.unbatch().filter(lambda _, x: x == 2).map(lambda x, _: x).batch(1)
 
 # Each entry taken from one of these datasets has dimensions (batch_size, time frames, channels)
 # (in this case, (4, 75400, 1) for full batches)
@@ -80,6 +81,13 @@ generator = tf.keras.Sequential([
     Real2Complex()
 ])
 
+def generator_straight_spectrogram_loss(big_x, big_y):
+    # big_x = tf.signal.stft(x, 1024, 256)
+    # big_y = tf.signal.stft(y, 1024, 256)
+    y_term = tf.tensordot(tf.square(tf.abs(big_y)), mel_xform_matrix, 1)
+    x_term = tf.tensordot(tf.square(tf.abs(big_x)), mel_xform_matrix, 1)
+    return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M_float / x_term.shape[1]
+
 def generator_log_spectrogram_loss(big_x, big_y):
     # big_x = tf.signal.stft(x, 1024, 256)
     # big_y = tf.signal.stft(y, 1024, 256)
@@ -93,9 +101,9 @@ checkpoint = tf.train.Checkpoint(generator=generator)
 status = checkpoint.restore(checkpoint_prefix+'-1')
 status.assert_existing_objects_matched()
 
+inference_prefix = './test_results/'
 
-
-def infer(x):
+def infer(x, filenum):
     x = tf.squeeze(x, [2])
     tf.print(x.shape)
     big_x_gen = tf.signal.stft(x, 116, 58)
@@ -105,11 +113,29 @@ def infer(x):
     # Anyway, the shape of big_x_gen is now (batch size, STFT time frames, STFT freq buckets)
     big_y_gen = generator(big_x_gen)
     y = tf.signal.inverse_stft(big_y_gen, 116, 58, window_fn=tf.signal.inverse_stft_window_fn(58))
-    tf.print(y)
     
     x_cut = x[:,-66120:]
     y_cut = y[:,-66120:]
+    
+    
+    # Mix together the stereo signal to compare to a plain mono signal
+    # We use the "middle" and "side" channels, similar to how the authors of the paper did it
+    stereo_result = tf.stack((x_cut + y_cut, x_cut - y_cut), axis=2)
+    # Get rid of the batch size dimension, ensure that a channel dimension exists instead for X
+    stereo_result = tf.squeeze(stereo_result, [0])
+    mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
+    # Encode as wav
+    stereo_result = tf.audio.encode_wav(stereo_result, tf.constant(22050))
+    mono_result = tf.audio.encode_wav(mono_result, tf.constant(22050))
+    # Now, save the mono result and the stereo result with the same base filename, in the same
+    # folder, to make them easier to match up with each other
+    tf.io.write_file(inference_prefix + f'{filenum}_orig.wav', mono_result)
+    tf.io.write_file(inference_prefix + f'{filenum}_stereo.wav', stereo_result)
+    
+    big_x = tf.signal.stft(x_cut, 1024, 256)
+    big_y = tf.signal.stft(y_cut, 1024, 256)
+    
+    return generator_log_spectrogram_loss(big_x, big_y)
 
-
-infer(next(iter(test_ds.take(1))))
+tf.print(infer(next(iter(test_ds.take(1))), 0))
 

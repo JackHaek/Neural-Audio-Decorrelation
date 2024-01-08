@@ -6,6 +6,7 @@ musdb18hq-processed
 logs
 slurm-*
 training_checkpoints
+test_results
 
 # Python
 __pycache__
