@@ -92,8 +92,13 @@ def generator_log_spectrogram_loss(big_x, big_y):
     # big_x = tf.signal.stft(x, 1024, 256)
     # big_y = tf.signal.stft(y, 1024, 256)
     epsilon = tf.constant(1e-8)
-    y_term = tf.tensordot(tf.math.log(tf.abs(big_y) + epsilon), mel_xform_matrix, 1)
-    x_term = tf.tensordot(tf.math.log(tf.abs(big_x) + epsilon), mel_xform_matrix, 1)
+    ten = tf.constant(10.)
+    twenty = tf.constant(20.)
+    # Squaring converts from voltage levels to sound power.
+    # Then converting to dB, sound power level, is 10 * log10(power)
+    # But that's redundant -- squaring just doubles the log value. So fold that into the multiplier
+    y_term = tf.tensordot(twenty * tf.math.log(tf.abs(big_y) + epsilon) / tf.math.log(ten), mel_xform_matrix, 1)
+    x_term = tf.tensordot(twenty * tf.math.log(tf.abs(big_x) + epsilon) / tf.math.log(ten), mel_xform_matrix, 1)
     return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M_float / x_term.shape[1]
 
 
@@ -120,17 +125,17 @@ def infer(x, filenum):
     
     # Mix together the stereo signal to compare to a plain mono signal
     # We use the "middle" and "side" channels, similar to how the authors of the paper did it
-    stereo_result = tf.stack(((x_cut + y_cut) / 2, (x_cut - y_cut) / 2), axis=2)
+    #stereo_result = tf.stack(((x_cut + y_cut) / 2, (x_cut - y_cut) / 2), axis=2)
     # Get rid of the batch size dimension, ensure that a channel dimension exists instead for X
-    stereo_result = tf.squeeze(stereo_result, [0])
-    mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
+    #stereo_result = tf.squeeze(stereo_result, [0])
+    #mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
     # Encode as wav
-    stereo_result = tf.audio.encode_wav(stereo_result, tf.constant(22050))
-    mono_result = tf.audio.encode_wav(mono_result, tf.constant(22050))
+    #stereo_result = tf.audio.encode_wav(stereo_result, tf.constant(22050))
+    #mono_result = tf.audio.encode_wav(mono_result, tf.constant(22050))
     # Now, save the mono result and the stereo result with the same base filename, in the same
     # folder, to make them easier to match up with each other
-    tf.io.write_file(inference_prefix + f'{filenum}_orig.wav', mono_result)
-    tf.io.write_file(inference_prefix + f'{filenum}_stereo.wav', stereo_result)
+    #tf.io.write_file(inference_prefix + f'{filenum}_orig.wav', mono_result)
+    #tf.io.write_file(inference_prefix + f'{filenum}_stereo.wav', stereo_result)
     
     big_x = tf.signal.stft(x_cut, 1024, 256)
     big_y = tf.signal.stft(y_cut, 1024, 256)
