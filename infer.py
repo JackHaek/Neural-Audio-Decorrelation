@@ -91,8 +91,9 @@ def generator_straight_spectrogram_loss(big_x, big_y):
 def generator_log_spectrogram_loss(big_x, big_y):
     # big_x = tf.signal.stft(x, 1024, 256)
     # big_y = tf.signal.stft(y, 1024, 256)
-    y_term = tf.tensordot(tf.square(tf.abs(tf.math.log(big_y))), mel_xform_matrix, 1)
-    x_term = tf.tensordot(tf.square(tf.abs(tf.math.log(big_x))), mel_xform_matrix, 1)
+    epsilon = tf.constant(1e-8)
+    y_term = tf.tensordot(tf.math.log(tf.abs(big_y) + epsilon), mel_xform_matrix, 1)
+    x_term = tf.tensordot(tf.math.log(tf.abs(big_x) + epsilon), mel_xform_matrix, 1)
     return tf.math.reduce_sum(tf.abs(y_term - x_term)) / M_float / x_term.shape[1]
 
 
@@ -105,7 +106,6 @@ inference_prefix = './test_results/'
 
 def infer(x, filenum):
     x = tf.squeeze(x, [2])
-    tf.print(x.shape)
     big_x_gen = tf.signal.stft(x, 116, 58)
     # Each channel of the audio has an FFT size of (1299, 65), and we have one channel (mono audio)
     # (116 fits into 128, meaning the frequencies range 0-64, and (1300 - 1) * 58 STFT frames could be made)
@@ -120,7 +120,7 @@ def infer(x, filenum):
     
     # Mix together the stereo signal to compare to a plain mono signal
     # We use the "middle" and "side" channels, similar to how the authors of the paper did it
-    stereo_result = tf.stack((x_cut + y_cut, x_cut - y_cut), axis=2)
+    stereo_result = tf.stack(((x_cut + y_cut) / 2, (x_cut - y_cut) / 2), axis=2)
     # Get rid of the batch size dimension, ensure that a channel dimension exists instead for X
     stereo_result = tf.squeeze(stereo_result, [0])
     mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
@@ -137,5 +137,19 @@ def infer(x, filenum):
     
     return generator_log_spectrogram_loss(big_x, big_y)
 
-tf.print(infer(next(iter(test_ds.take(1))), 0))
+current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+w = tf.summary.create_file_writer(f'logs/infer/{current_time}/test')
 
+losses = []
+for i, batch in enumerate(test_ds):
+    loss = infer(batch, i)
+    if not tf.math.is_finite(loss):
+        assert False
+    losses.append(loss)
+
+losses = tf.convert_to_tensor(losses)
+
+with w.as_default():
+    tf.summary.histogram('log_mel_spectrogram_diffs', losses, step=0)
+
+tf.print('Done!!!!!!')
