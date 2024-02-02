@@ -7,6 +7,7 @@ logs
 slurm-*
 training_checkpoints
 test_results
+test_results_again
 
 # Python
 __pycache__

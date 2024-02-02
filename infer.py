@@ -107,7 +107,7 @@ checkpoint = tf.train.Checkpoint(generator=generator)
 status = checkpoint.restore(checkpoint_prefix+'-1')
 status.assert_existing_objects_matched()
 
-inference_prefix = './test_results/'
+inference_prefix = './test_results_again/'
 
 def infer(x, filenum):
     x = tf.squeeze(x, [2])
@@ -122,25 +122,28 @@ def infer(x, filenum):
     x_cut = x[:,-66120:]
     y_cut = y[:,-66120:]
     
+    big_x = tf.signal.stft(x_cut, 1024, 256)
+    big_y = tf.signal.stft(y_cut, 1024, 256)
+    loss = generator_log_spectrogram_loss(big_x, big_y)
     
     # Mix together the stereo signal to compare to a plain mono signal
     # We use the "middle" and "side" channels, similar to how the authors of the paper did it
-    #stereo_result = tf.stack(((x_cut + y_cut) / 2, (x_cut - y_cut) / 2), axis=2)
+    stereo_result = tf.stack(((x_cut + y_cut) / 2, (x_cut - y_cut) / 2), axis=2)
     # Get rid of the batch size dimension, ensure that a channel dimension exists instead for X
-    #stereo_result = tf.squeeze(stereo_result, [0])
-    #mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
+    stereo_result = tf.squeeze(stereo_result, [0])
+    mono_result = tf.squeeze(x_cut[..., tf.newaxis], [0])
+    # A stereo file with the same content in both ears may sound different than a mono file when
+    # played back, so let's do that
+    mono_result = tf.concat((mono_result, mono_result), axis=1)
     # Encode as wav
-    #stereo_result = tf.audio.encode_wav(stereo_result, tf.constant(22050))
-    #mono_result = tf.audio.encode_wav(mono_result, tf.constant(22050))
+    stereo_result = tf.audio.encode_wav(stereo_result, tf.constant(22050))
+    mono_result = tf.audio.encode_wav(mono_result, tf.constant(22050))
     # Now, save the mono result and the stereo result with the same base filename, in the same
     # folder, to make them easier to match up with each other
-    #tf.io.write_file(inference_prefix + f'{filenum}_orig.wav', mono_result)
-    #tf.io.write_file(inference_prefix + f'{filenum}_stereo.wav', stereo_result)
+    tf.io.write_file(inference_prefix + f'{filenum}_orig ({loss}).wav', mono_result)
+    tf.io.write_file(inference_prefix + f'{filenum}_stereo.wav', stereo_result)
     
-    big_x = tf.signal.stft(x_cut, 1024, 256)
-    big_y = tf.signal.stft(y_cut, 1024, 256)
-    
-    return generator_log_spectrogram_loss(big_x, big_y)
+    return loss
 
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 w = tf.summary.create_file_writer(f'logs/infer/{current_time}/test')
